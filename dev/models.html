@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model test harness</title><link rel="stylesheet" href="../css/style.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>body{padding:0}#bar{padding:8px;font-size:13px}</style></head>
+<body><div id="bar"></div><div class="viewer-wrap" style="margin:0"><div id="viewer" class="viewer" style="height:760px"></div><div class="disclaimer">Simplified approximation</div></div>
+<script type="module">
+// Dev-only harness: renders a model for a synthetic launch record (?rocket=...&mission=...&type=...&sc=...)
+import { createViewer } from '../js/rocket3d.js';
+const q = new URLSearchParams(location.search);
+const l = { name: q.get('mission') || 'Test', mission: { name: q.get('mission') || 'Test', type: q.get('type') || 'Communications' },
+  rocket: { full_name: q.get('rocket') || 'Falcon 9 Block 5', name: q.get('rocket') || 'Falcon 9', length: Number(q.get('len')) || null, diameter: Number(q.get('dia')) || null,
+    spacecraft_stage: q.get('sc') ? [{ name: q.get('sc'), config: q.get('sc'), config_type: 'Capsule', human_rated: /crew/i.test(q.get('sc')) }] : [], payloads: [], launcher_stage: [] } };
+const v = createViewer(document.getElementById('viewer'), l);
+window.__viewer = v; document.getElementById('bar').textContent = `${v.info.name} · ${v.plan.payload}`;
+if (q.get('explode')) v.setExplode(Number(q.get('explode')), true);
+</script></body></html>

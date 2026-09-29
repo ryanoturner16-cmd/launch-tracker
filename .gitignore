@@ -1,0 +1,13 @@
+# dependencies / build output
+node_modules/
+dist/
+# local artefacts (never published)
+screenshots/
+backup-*/
+tools/bin/
+*.log
+*.tmp
+tmp/
+.DS_Store
+.env
+.env.*

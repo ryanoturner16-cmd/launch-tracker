@@ -1,0 +1,81 @@
+# Scheduled Launch Library 2 refresh + static deploy of dist/ to GitHub Pages.
+# Needs a GitHub repo with Pages enabled (Settings -> Pages -> Source: "GitHub Actions"); free for public repos.
+# Optional repository secret LL2_API_TOKEN (Patreon-tier key; sent as "Authorization: Token ...").
+# Optional repository variable PAGES_URL if the site is not at https://<owner>.github.io/<repo> (custom domain).
+#
+# Action versions checked 2026-09-28 on each action's GitHub releases page: checkout v7.0.1 (Jul 20),
+# setup-node v7.0.0 (Jul 14), upload-pages-artifact v5.0.0 (Apr 10), deploy-pages v5.0.1 (Sep 1).
+# Hardening option: pin each `uses:` to the full 40-char commit SHA of that release (and let Dependabot bump it).
+#
+# Data never gets committed: each run restores the last published launches.json, fetches on top of it and
+# deploys dist/ as a Pages artifact. GitHub may start scheduled runs late (they are best-effort) and disables
+# schedules in public repos after 60 days without repository activity; see README "Scheduled refresh".
+name: Refresh launch data and deploy
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'   # every 15 min, off the top of the hour (busiest time for Actions)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: launch-data
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false   # no npm dependencies are installed in CI
+
+      # Restore last published data -> fetch LL2 (2 requests) -> decide whether to deploy.
+      # Do NOT set LL2_OFFLINE here: it makes fetch-launches.mjs refuse all network access (test runners set it).
+      # Writes restored / fetch_code / deploy to $GITHUB_OUTPUT. Never fails here, so usable data still deploys;
+      # the last step turns the run red afterwards if something needs attention.
+      - name: Refresh data/launches.json
+        id: data
+        env:
+          LL2_API_TOKEN: ${{ secrets.LL2_API_TOKEN }}
+          PAGES_URL: ${{ vars.PAGES_URL }}
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"; repo="${GITHUB_REPOSITORY#*/}"
+          base="${PAGES_URL:-https://${owner}.github.io/${repo}}"
+          PAGES_DATA_URL="${base%/}/data/launches.json" bash tools/ci-refresh.sh
+
+      - name: Build dist/ (index.html, starship.html, css/, js/, data/ only)
+        if: steps.data.outputs.deploy == 'true'
+        run: node tools/build.mjs
+
+      - uses: actions/upload-pages-artifact@v5
+        if: steps.data.outputs.deploy == 'true'
+        with:
+          path: dist
+
+      - id: deploy
+        if: steps.data.outputs.deploy == 'true'
+        uses: actions/deploy-pages@v5
+
+      # Runs after deploying whatever usable data we had. Fails the run (GitHub then emails the failure) if the
+      # fetch crashed (exit 1 / unexpected code), nothing was deployed, or generated_at is more than 3 h old.
+      - name: Fail the run if the data needs attention
+        if: ${{ !cancelled() && steps.data.outcome == 'success' }}
+        env:
+          FETCH_CODE: ${{ steps.data.outputs.fetch_code }}
+          DEPLOY: ${{ steps.data.outputs.deploy }}
+          MAX_AGE_H: '3'
+        run: node tools/ci-health.mjs
