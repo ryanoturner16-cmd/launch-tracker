@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" data-dive="apollo">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<meta name="description" content="Apollo / Saturn V deep dive: interactive cutaway of the Moon rocket, F-1 and J-2 engines, and the Apollo spacecraft. Unofficial fan/learning project.">
+<title>Apollo deep dive · Launch Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%80%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/starship.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<div id="top"><div class="tt"><div id="topLinks"><a id="backLink" href="index.html">‹ Launch Tracker</a><a href="starship.html">Starship</a><a href="falcon9.html">Falcon 9</a></div><h1>Apollo Explorer</h1><div class="disc">Unofficial fan/learning project. Not affiliated with or endorsed by NASA.</div><button id="blockTag" aria-label="Which stack is shown? Tap for details"><span>Model ⓘ</span></button></div><button id="help" aria-label="Help">?</button></div>
+<div id="legend"></div>
+<div id="card"><button id="cClose" aria-label="Close">×</button><div id="cTag"></div><div id="cTitle"></div><p id="cDesc"></p><div id="cSpecs"></div><div id="cNote"></div><div id="cAct"></div></div>
+<div id="sheet"><button id="sheetClose" aria-label="Close">×</button><h3>Show / hide systems</h3><div class="chips"></div></div>
+<div id="panel">
+  <div id="hint" role="status"><p>Tap any part or label for info · drag to rotate · pinch to zoom · 2 fingers to pan</p><button id="hintClose" aria-label="Dismiss tip">×</button></div>
+  <div id="seg"></div>
+  <div class="row">
+    <button class="b" id="bSkin">Skin<b>Solid</b></button>
+    <button class="b" id="bFlow"><span class="dot"></span>Fuel flow</button>
+    <button class="b" id="bPlume"><span class="dot"></span>Plume</button>
+    <button class="b" id="bLabels"><span class="dot"></span>Labels</button>
+    <button class="b" id="bParts"><span class="dot"></span>Parts</button>
+  </div>
+  <div class="row" id="explodeRow"><label for="explode">Explode</label><input id="explode" type="range" min="0" max="100" value="0"><span id="exVal">0%</span></div>
+</div>
+<div id="helpBox"><div><h2>Apollo / Saturn V Explorer</h2>
+<b>Rotate</b> – drag with one finger<br><b>Zoom</b> – pinch<br><b>Pan</b> – two-finger drag<br><b>Info</b> – tap any part or label<br><br>
+<b>Stack / S-IC / S-II / S-IVB / Apollo</b> – choose what to view.<br><b>Skin</b> – Solid → Cutaway → X-ray.<br><b>Fuel flow</b> – LOX (blue), RP-1 (orange), LH2 (violet).<br><b>Explode</b> – pull stages apart.<br><b>Parts</b> – tanks, engines, spacecraft, fins / LES.<br><br>
+<span class="fine">Unofficial fan/learning project. Not affiliated with or endorsed by NASA. Figures are approximate public information; internal layouts are schematic. Built with three.js (MIT). Part of the unofficial Launch Tracker fan project.</span></div></div>
+<noscript>This 3D view needs JavaScript and WebGL. Unofficial fan/learning project. Not affiliated with or endorsed by NASA.</noscript>
+<script src="js/dive/boot.js"></script>
+<script type="module" src="js/dive/entry.js"></script>
+</body>
+</html>

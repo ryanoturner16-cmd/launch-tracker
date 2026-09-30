@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Production build: copies ONLY the deployable app into dist/ (index.html, starship.html, css/, js/, data/).
+// Production build: copies ONLY the deployable app into dist/ (index.html, starship.html, falcon9.html, apollo.html, css/, js/, data/).
 // No tools, dev harness, screenshots, backups, node_modules or README end up in dist/. Deploy dist/ and nothing else.
 // Usage: node tools/build.mjs
 import { rmSync, mkdirSync, cpSync, readdirSync, statSync, readFileSync, existsSync } from 'node:fs';
@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const dist = join(root, 'dist');
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(join(dist, 'data'), { recursive: true });
-for (const f of ['index.html', 'starship.html']) cpSync(join(root, f), join(dist, f));
+for (const f of ['index.html', 'starship.html', 'falcon9.html', 'apollo.html']) cpSync(join(root, f), join(dist, f));
 cpSync(join(root, 'css'), join(dist, 'css'), { recursive: true });
 cpSync(join(root, 'js'), join(dist, 'js'), { recursive: true });
 if (!existsSync(join(root, 'data/launches.json'))) throw new Error('data/launches.json missing: run node tools/fetch-launches.mjs first');
@@ -21,7 +21,7 @@ const files = []; const walk = (d) => { for (const n of readdirSync(d)) { const 
 const problems = [];
 for (const f of files) {
   const rel = relative(dist, f);
-  if (!/^(index\.html|starship\.html|css\/|js\/|data\/)/.test(rel)) problems.push(`unexpected file ${rel}`);
+  if (!/^(index\.html|starship\.html|falcon9\.html|apollo\.html|css\/|js\/|data\/)/.test(rel)) problems.push(`unexpected file ${rel}`);
   if (/\.(html|js|css)$/.test(f)) {
     const t = readFileSync(f, 'utf8');
     if (/ll(dev)?\.thespacedevs\.com/.test(t)) problems.push(`${rel} references the LL2 API host`);
