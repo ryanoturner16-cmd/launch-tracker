@@ -112,6 +112,7 @@ export function startDive(spec) {
   function partVisible(p) {
     if (p.cutawayOnly && skin === 0) return false;
     if (p.layer && layerOn[p.layer] === false) return false;
+    if (p.hideOnStack && stage === stackId) return false;
     if (stage === stackId || p.always) return true;
     const stages = p.stages || (p.stage ? [p.stage] : [stackId]);
     return stages.includes(stage);

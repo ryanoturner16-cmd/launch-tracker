@@ -5,27 +5,149 @@ const W = 0xefeee8, BLK = 0x1a1a1c, CARB = 0x16161a, MET = 0xb8bcc4, COP = 0xb56
 const LOX = 0x3ec7e6, RP1 = 0xd4892a;
 const R = 1.83; // 3.66 m diameter, 1 unit = 1 metre
 
+let _regen;
+function regenMap() {
+  if (_regen) return _regen;
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 512;
+  const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 512, 0, 0);
+  gr.addColorStop(0, '#6a3a22');
+  gr.addColorStop(0.35, '#b56a32');
+  gr.addColorStop(0.7, '#d0894a');
+  gr.addColorStop(1, '#c9a078');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 256, 512);
+  for (let i = 0; i < 64; i++) {
+    const x = (i / 64) * 256;
+    g.fillStyle = 'rgba(0,0,0,0.28)';
+    g.fillRect(x, 0, 1.4, 512);
+    g.fillStyle = 'rgba(255,220,180,0.16)';
+    g.fillRect(x + 1.4, 0, 0.8, 512);
+  }
+  _regen = new THREE.CanvasTexture(c);
+  _regen.colorSpace = THREE.SRGBColorSpace;
+  _regen.wrapS = _regen.wrapT = THREE.RepeatWrapping;
+  _regen.repeat.set(2, 1);
+  return _regen;
+}
+
+function bellGeo(re, rt, h, seg = 22) {
+  const pts = [];
+  for (let i = 0; i <= 16; i++) {
+    const u = i / 16;
+    pts.push(new THREE.Vector2(rt + (re - rt) * Math.pow(u, 0.62), -u * h));
+  }
+  return new THREE.LatheGeometry(pts, seg);
+}
+
+function tube(a, b, r, material, seg = 6) {
+  const d = b.clone().sub(a);
+  const len = d.length();
+  if (len < 1e-4) return new THREE.Group();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), material);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+  return m;
+}
+
 function merlin(sea = true) {
   const g = new THREE.Group();
-  const exit = sea ? 0.46 : 1.22;
-  const throat = sea ? 0.16 : 0.22;
-  const h = sea ? 1.15 : 2.7;
+  const re = sea ? 0.46 : 1.18;
+  const rt = sea ? 0.15 : 0.18;
+  const h = sea ? 1.22 : 2.65;
   const bell = new THREE.Mesh(
-    new THREE.CylinderGeometry(exit, throat, h, 20, 1, true),
-    mat(sea ? COP : 0x6e737c, { metalness: 0.55, roughness: 0.32, side: THREE.DoubleSide })
+    bellGeo(re, rt, h, sea ? 20 : 24),
+    mat(sea ? COP : 0x8a9098, {
+      metalness: 0.55,
+      roughness: 0.32,
+      side: THREE.DoubleSide,
+      map: sea ? regenMap() : null,
+    })
   );
-  bell.position.y = -h / 2;
   g.add(bell);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(throat, throat, 0.22, 12), mat(NOZ));
-  neck.position.y = 0.12;
-  g.add(neck);
-  const turb = new THREE.Mesh(new THREE.CylinderGeometry(sea ? 0.26 : 0.32, sea ? 0.26 : 0.32, 0.42, 12), mat(MET, { metalness: 0.55 }));
-  turb.position.y = 0.42;
-  g.add(turb);
-  if (sea) {
-    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7, 6), mat(0x8a9098));
-    pipe.position.set(0.18, 0.15, 0);
-    g.add(pipe);
+  const chamber = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.42, 14), mat(0x9aa0a8, { metalness: 0.5 }));
+  chamber.position.y = 0.28;
+  g.add(chamber);
+  const pump = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.55, 12), mat(MET, { metalness: 0.6 }));
+  pump.rotation.z = Math.PI / 2;
+  pump.position.set(0.32, 0.48, 0);
+  g.add(pump);
+  const gg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.28, 10), mat(0x6a7078));
+  gg.position.set(0.32, 0.78, 0);
+  g.add(gg);
+  const gimbal = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.22, 10), mat(NOZ));
+  gimbal.position.y = 0.58;
+  g.add(gimbal);
+  return g;
+}
+
+function merlinCloseup(sea = true) {
+  const g = new THREE.Group();
+  const re = sea ? 0.48 : 1.22;
+  const rt = 0.155;
+  const h = sea ? 1.35 : 2.85;
+  const copper = mat(sea ? COP : 0x8a9098, {
+    metalness: 0.62,
+    roughness: 0.3,
+    side: THREE.DoubleSide,
+    map: sea ? regenMap() : null,
+  });
+  const steel = mat(MET, { metalness: 0.62, roughness: 0.32 });
+  const dark = mat(NOZ, { metalness: 0.45, roughness: 0.4 });
+  const line = mat(0x8a9098, { metalness: 0.5, roughness: 0.35 });
+
+  g.add(new THREE.Mesh(bellGeo(re, rt, h, 28), copper));
+
+  const throat = new THREE.Mesh(new THREE.CylinderGeometry(rt, rt * 1.15, 0.16, 16), dark);
+  throat.position.y = 0.02;
+  g.add(throat);
+
+  const chamber = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.55, 18), steel);
+  chamber.position.y = 0.36;
+  g.add(chamber);
+
+  const injector = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 16), dark);
+  injector.position.y = 0.66;
+  g.add(injector);
+
+  const gimbal = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.18, 0.28, 12), dark);
+  gimbal.position.y = 0.86;
+  g.add(gimbal);
+  const fork = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.12), steel);
+  fork.position.y = 1.02;
+  g.add(fork);
+
+  const pump = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.72, 16), steel);
+  pump.rotation.z = Math.PI / 2;
+  pump.position.set(0.42, 0.58, 0);
+  g.add(pump);
+  const turbine = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.2, 16), mat(0xc9a36a, { metalness: 0.65 }));
+  turbine.rotation.z = Math.PI / 2;
+  turbine.position.set(0.78, 0.58, 0);
+  g.add(turbine);
+  const inlet = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.28, 10), line);
+  inlet.position.set(0.42, 0.92, 0);
+  g.add(inlet);
+
+  const gg = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.32, 12), mat(0x6e747c, { metalness: 0.5 }));
+  gg.position.set(0.42, 0.88, 0.16);
+  g.add(gg);
+
+  g.add(tube(new THREE.Vector3(0.78, 0.58, 0), new THREE.Vector3(0.95, 0.15, 0.28), 0.035, line));
+  g.add(tube(new THREE.Vector3(0.42, 0.92, 0), new THREE.Vector3(0.08, 0.66, 0), 0.04, mat(RP1, { metalness: 0.2 })));
+  g.add(tube(new THREE.Vector3(-0.28, 0.95, 0), new THREE.Vector3(-0.08, 0.66, 0), 0.045, mat(LOX, { metalness: 0.2 })));
+  const loxFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.16, 10), mat(LOX, { metalness: 0.2 }));
+  loxFlange.position.set(-0.28, 1.02, 0);
+  g.add(loxFlange);
+
+  if (!sea) {
+    const skirt = new THREE.Mesh(
+      new THREE.CylinderGeometry(re + 0.04, re * 0.55, 0.35, 24, 1, true),
+      mat(0x5c626a, { metalness: 0.45, side: THREE.DoubleSide })
+    );
+    skirt.position.y = -0.12;
+    g.add(skirt);
   }
   return g;
 }
@@ -105,7 +227,7 @@ startDive({
   stageInfo: {
     first: { name: 'First stage', tag: 'Booster', desc: 'Nine Merlin 1D engines in an octaweb. After MECO it flips, boosts back or continues to a drone ship, and lands on four legs steered by titanium grid fins.', specs: [['Thrust (SL)', '~7.6 MN'], ['Burn', '~162 s'], ['Reuse', 'Landing legs + grid fins']] },
     second: { name: 'Second stage', tag: 'Upper stage', desc: 'A single Merlin Vacuum with an expanded nozzle for space. It circularizes the orbit and is not recovered.', specs: [['Engine', 'Merlin Vacuum'], ['Nozzle', '~2.4 m exit'], ['Reuse', 'Expended']] },
-    merlin: { name: 'Merlin 1D', tag: 'Engine', desc: 'Gas-generator RP-1/LOX engine. Sea-level bells are copper-colored; the vacuum engine uses a much larger nozzle extension.', specs: [['Cycle', 'Gas generator'], ['Isp (SL / vac)', '~282 / 348 s'], ['Throttle', 'Yes, for landing']] },
+    merlin: { name: 'Merlin 1D', tag: 'Engine', desc: 'Gas-generator RP-1/LOX engine. Sea-level bells are copper-colored with regenerative cooling channels. The vacuum engine adds a large nozzle extension. Tap the bell, chamber, or turbopump.', specs: [['Cycle', 'Gas generator'], ['Isp (SL / vac)', '~282 / 348 s'], ['Throttle', 'Yes, for landing']] },
   },
   layers: [
     { id: 'tanks', label: 'Tanks' },
@@ -122,7 +244,6 @@ startDive({
     const loxMat = mat(LOX, { metalness: 0.05, roughness: 0.35, transparent: true, opacity: 0.55 });
     const rpMat = mat(RP1, { metalness: 0.08, roughness: 0.45, transparent: true, opacity: 0.55 });
 
-    // ---- 9 Merlins + octaweb
     const octa = A.group();
     octa.add(A.mesh(A.cyl(R * 0.98, R * 0.98, 1.35, 20), black, 0.85));
     octa.add(A.mesh(A.cyl(R * 0.72, R * 0.9, 0.35, 16), mat(0x2a2a30), 0.22));
@@ -149,19 +270,17 @@ startDive({
       A.addPlume(pl);
     });
     A.addPart({
-      name: 'Merlin 1D (sea level)', tag: 'Engine', label: '9 × Merlin', labelY: -0.4, layer: 'engines', stages: ['first', 'merlin'], explode: [0, -8, 0],
-      desc: 'Nine sea-level Merlin 1D engines. The center engine and some outer engines restart for boostback, entry and landing burns.',
+      name: 'Merlin 1D (sea level)', tag: 'Engine', label: '9 × Merlin', labelY: -0.4, layer: 'engines', stage: 'first', explode: [0, -8, 0],
+      desc: 'Nine sea-level Merlin 1D engines. The center engine and some outer engines restart for boostback, entry and landing burns. Open the Merlin tab for a close-up.',
       specs: [['Count', '9'], ['Propellant', 'RP-1 + LOX'], ['Cycle', 'Gas generator']], mesh: merlins,
     });
 
-    // ---- first-stage barrel (continuous white, like the real booster)
     const barrel = A.group();
     barrel.add(A.mesh(A.cyl(R, R, 37.4, 28), white, 20.3));
     const race = new THREE.Mesh(new THREE.BoxGeometry(0.22, 34, 0.18), mat(0x3a3a40, { metalness: 0.2 }));
     race.position.set(R + 0.02, 21, 0);
     barrel.add(race);
-    const band = A.mesh(A.cyl(R + 0.01, R + 0.01, 0.18, 24), mat(0xc9c9c4), 12.2);
-    barrel.add(band);
+    barrel.add(A.mesh(A.cyl(R + 0.01, R + 0.01, 0.18, 24), mat(0xc9c9c4), 12.2));
     A.addPart({
       name: 'First-stage tanks', tag: 'Propellant', label: 'LOX + RP-1', labelY: 22, layer: 'tanks', stage: 'first',
       desc: 'Common-dome tanks: RP-1 in the lower tank, subcooled LOX above. The dark strip is the raceway that carries wiring and plumbing up the side.',
@@ -202,7 +321,6 @@ startDive({
       specs: [['Fins', '4 titanium'], ['Interstage', 'Stays on the booster']], mesh: inter,
     });
 
-    // ---- second stage
     const s2 = A.group();
     s2.add(A.mesh(A.cyl(R, R, 8.6, 24), white, 49.3));
     const vac = merlin(false);
@@ -225,8 +343,7 @@ startDive({
     A.addFlow(new THREE.Vector3(-0.45, 48.2, 0), new THREE.Vector3(-0.2, 44.4, 0), 0xffa21a, 5);
 
     const fair = A.group();
-    const fairGeo = ogiveFairing(R, 7.4, 4.8);
-    const fairMesh = new THREE.Mesh(fairGeo, white);
+    const fairMesh = new THREE.Mesh(ogiveFairing(R, 7.4, 4.8), white);
     fairMesh.position.y = 53.6;
     fair.add(fairMesh);
     const sat = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.8, 1.6), mat(0x8ea0b8, { metalness: 0.35 }));
@@ -237,5 +354,36 @@ startDive({
       desc: 'Two-shell composite ogive fairing. It protects the satellite on the way up; the halves are often recovered. Crew Dragon replaces this on crew flights.',
       specs: [['Type', '2-shell composite'], ['Reuse', 'Often recovered']], mesh: fair,
     });
+
+    // ---- Merlin close-up (only the Merlin tab)
+    const sl = merlinCloseup(true);
+    sl.position.set(-2.15, 0, 0);
+    const slPlume = plume(2.4, 0.42, 0xff9a3c);
+    slPlume.position.y = -1.35;
+    sl.add(slPlume);
+    A.addPlume(slPlume);
+    A.addPart({
+      name: 'Merlin 1D sea-level', tag: 'Engine', label: 'Merlin 1D', labelY: 0.7, layer: 'engines', stage: 'merlin', hideOnStack: true, explode: [-1.2, 0, 0],
+      desc: 'Gas-generator RP-1/LOX engine. RP-1 runs through cooling channels in the copper-colored bell, then into the injector. A single-shaft turbopump sits beside the chamber. Throttleable for landing.',
+      specs: [['Thrust (SL)', '~845 kN'], ['Isp (SL)', '~282 s'], ['Chamber', '~6.8 MPa'], ['Nozzle', 'Regen-cooled']],
+      mesh: sl,
+    });
+    const mv = merlinCloseup(false);
+    mv.position.set(2.6, 0.4, 0);
+    const mvPlume = plume(3.6, 0.9, 0xffc56a);
+    mvPlume.position.y = -2.85;
+    mv.add(mvPlume);
+    A.addPlume(mvPlume);
+    A.addPart({
+      name: 'Merlin Vacuum', tag: 'Engine', label: 'Merlin Vac', labelY: 0.5, layer: 'engines', stage: 'merlin', hideOnStack: true, explode: [1.6, 0, 0],
+      desc: 'Same gas-generator core as the sea-level engine, with a much larger niobium nozzle extension for vacuum Isp. One of these flies on every Falcon 9 second stage.',
+      specs: [['Thrust (vac)', '~981 kN'], ['Isp (vac)', '~348 s'], ['Exit', '~2.4 m'], ['Reuse', 'Expended']],
+      mesh: mv,
+    });
+
+    A.addFlow(new THREE.Vector3(-2.43, 1.02, 0), new THREE.Vector3(-2.23, 0.66, 0), 0x2ad4ff, 6);
+    A.addFlow(new THREE.Vector3(-1.73, 0.92, 0), new THREE.Vector3(-2.07, 0.66, 0), 0xffa21a, 6);
+    A.addFlow(new THREE.Vector3(2.32, 1.42, 0), new THREE.Vector3(2.52, 1.06, 0), 0x2ad4ff, 5);
+    A.addFlow(new THREE.Vector3(3.02, 1.32, 0), new THREE.Vector3(2.68, 1.06, 0), 0xffa21a, 5);
   },
 });
