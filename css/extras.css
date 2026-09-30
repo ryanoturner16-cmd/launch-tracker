@@ -14,3 +14,4 @@
 .savebtn.on { color: #ffd166; border-color: rgba(255,209,102,.55); background: rgba(40,28,8,.85); }
 .detailbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .detailbar .savebtn { position: static; }
+.divelinks { display: flex; flex-wrap: wrap; gap: 8px; }

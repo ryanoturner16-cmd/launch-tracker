@@ -35,6 +35,13 @@ function enhanceList() {
   const chips = $('#chips', app);
   const head = $('.hero-head', app);
   head.insertAdjacentElement('afterend', toolbar);
+  const tb = $('.titlebar', app);
+  if (tb && !tb.querySelector('[href="falcon9.html"]')) {
+    const extra = document.createElement('span');
+    extra.className = 'divelinks';
+    extra.innerHTML = '<a class="navlink" href="falcon9.html">Falcon 9 ›</a><a class="navlink" href="apollo.html">Apollo ›</a>';
+    tb.appendChild(extra);
+  }
   const sub = $('.sub', app);
   if (sub) sub.innerHTML = `Orbital launches from every provider · times in <b>${esc(st.tz === 'UTC' ? 'UTC' : tzName)}</b>`;
 
@@ -148,6 +155,24 @@ function enhanceDetail() {
     btn.textContent = nowOn ? '★' : '☆';
   });
   bar.appendChild(btn);
+  const l = byId(id);
+  const rn = l ? `${l.rocket && l.rocket.full_name || ''} ${l.rocket && l.rocket.name || ''}` : '';
+  if (l && /falcon 9/i.test(rn) && !/heavy/i.test(rn) && !det.querySelector('.deepdive-f9')) {
+    const a = document.createElement('a');
+    a.className = 'deepdive deepdive-f9';
+    a.href = 'falcon9.html?from=' + encodeURIComponent(id);
+    a.innerHTML = '<b>🔍 Falcon 9 deep dive</b><span>Cutaway & X-ray, Merlin engines, fuel flow, landing hardware</span>';
+    const anchor = det.querySelector('.panel.watch') || det.querySelector('.dhero');
+    if (anchor) anchor.insertAdjacentElement('afterend', a);
+  }
+  if (l && /saturn v|\bapollo\b/i.test(rn + ' ' + (l.mission && l.mission.name || '') + ' ' + (l.name || '')) && !det.querySelector('.deepdive-apollo')) {
+    const a = document.createElement('a');
+    a.className = 'deepdive deepdive-apollo';
+    a.href = 'apollo.html?from=' + encodeURIComponent(id);
+    a.innerHTML = '<b>🔍 Apollo / Saturn V deep dive</b><span>Cutaway & X-ray, F-1 and J-2 engines, CSM + LM</span>';
+    const anchor = det.querySelector('.panel.watch') || det.querySelector('.dhero');
+    if (anchor) anchor.insertAdjacentElement('afterend', a);
+  }
   applyTimes();
 }
 

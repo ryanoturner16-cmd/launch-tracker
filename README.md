@@ -4,14 +4,14 @@ Unofficial fan project. Not affiliated with SpaceX or any launch provider. Data 
 The Space Devs; may be delayed or inaccurate.
 
 Static, mobile-first rocket launch tracker with countdowns, plain-language mission explanations, exploded
-3D rocket models and a full-screen **Starship deep dive** (formerly "Starship Explorer": cutaway/X-ray,
-animated propellant flow, Raptor engine cycle, info cards).
+3D rocket models and full-screen deep dives for **Starship**, **Falcon 9**, and **Apollo / Saturn V** (cutaway/X-ray, fuel flow, info cards).
 
 ## Layout
 | Path | What |
 |---|---|
 | `index.html` | tracker shell (strict CSP meta tag, no inline script/style) |
 | `starship.html` | Starship deep dive (same CSP) |
+| `falcon9.html`, `apollo.html` | Falcon 9 Block 5 and Apollo / Saturn V deep dives |
 | `css/style.css`, `css/starship.css` | styles |
 | `js/app.js` | list, filters, detail view, router; only reads `data/launches.json` |
 | `js/data.js` | loads `data/launches.json`, merges with the device cache (newest `last_updated` wins) |
@@ -21,7 +21,8 @@ animated propellant flow, Raptor engine cycle, info cards).
 | `js/rocket3d.js` | procedural three.js models, side-booster table, scroll-friendly viewer, idle render loop |
 | `js/starship-detailed.js` | tracker's Starship model (V3 or Block 2) |
 | `js/starship/geometry.js` | **shared** Starship geometry (tracker model + deep dive) |
-| `js/starship/main.js`, `info.js`, `entry.js`, `boot.js`, `variant.js` | deep dive app, info cards, loaders |
+| `js/starship/main.js`, `info.js`, `entry.js`, `boot.js`, `variant.js` | Starship deep dive app, info cards, loaders |
+| `js/dive/` | shared deep-dive engine + Falcon 9 and Apollo / Saturn V models |
 | `js/vendor/three/` | self-hosted three.js r169 (+4 addons, imports rewritten to relative paths) and its MIT `LICENSE` |
 | `data/launches.json` | trimmed LL2 snapshot written by the fetch job (under 100 KB) |
 | `tools/fetch-launches.mjs` | server-side fetch job (LL2 upcoming + last 48 h → `data/launches.json`) |

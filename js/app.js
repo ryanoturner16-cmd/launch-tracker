@@ -161,7 +161,7 @@ function renderList() {
   const upcoming = list.filter((l) => !recent.includes(l));
   app.innerHTML = `
     <header class="hero-head">
-      <div class="titlebar"><h1>🚀 Launch Tracker</h1><a class="navlink" href="starship.html">Starship deep dive ›</a></div>
+      <div class="titlebar"><h1>🚀 Launch Tracker</h1><span class="divelinks"><a class="navlink" href="starship.html">Starship ›</a><a class="navlink" href="falcon9.html">Falcon 9 ›</a><a class="navlink" href="apollo.html">Apollo ›</a></span></div>
       <p class="sub">Orbital launches from every provider · times in <b>${esc(tzName.replace(/_/g, ' '))}</b></p>
       ${sourceBadge()}
     </header>
@@ -195,6 +195,8 @@ function renderDetail(id) {
     l.flightclub_url ? { t: '📈 Flight Club trajectory', u: l.flightclub_url } : null, l.pad.map_url ? { t: '🗺 Pad on map', u: l.pad.map_url } : null]
     .filter(Boolean).map((k) => ({ ...k, u: safeHttp(k.u) })).filter((k) => k.u);
   const isStarship = /starship|super heavy/i.test(`${l.rocket.full_name} ${l.rocket.name}`);
+  const isFalcon9 = /falcon 9/i.test(`${l.rocket.full_name} ${l.rocket.name}`) && !/heavy/i.test(`${l.rocket.full_name} ${l.rocket.name}`);
+  const isApollo = /saturn v|\bapollo\b/i.test(`${l.rocket.full_name} ${l.rocket.name} ${l.mission ? l.mission.name : ''} ${l.name}`);
   const sv = isStarship ? starshipVariant(l) : null;
   app.innerHTML = `
   <div class="detail">
@@ -212,6 +214,8 @@ function renderDetail(id) {
     ${img ? `<p class="imgcredit">${credit(img, true)}</p>` : ''}
     ${watchPanel(l)}
     ${isStarship ? `<a class="deepdive" href="starship.html?v=${sv.v}&amp;from=${encodeURIComponent(l.id)}"><b>🔍 Starship deep dive</b><span>Cutaway &amp; X-ray, animated propellant flow, Raptor engine cycle, info cards${sv.v === 3 ? ' · V3 booster fins &amp; hot-stage' : ''}</span></a>` : ''}
+    ${isFalcon9 ? `<a class="deepdive" href="falcon9.html?from=${encodeURIComponent(l.id)}"><b>🔍 Falcon 9 deep dive</b><span>Cutaway & X-ray, Merlin engines, fuel flow, landing hardware</span></a>` : ''}
+    ${isApollo ? `<a class="deepdive" href="apollo.html?from=${encodeURIComponent(l.id)}"><b>🔍 Apollo / Saturn V deep dive</b><span>Cutaway & X-ray, F-1 and J-2 engines, CSM + LM</span></a>` : ''}
 
     <section class="panel">
       <h2>3D model <span class="tag">tap a part</span></h2>
